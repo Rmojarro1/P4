@@ -1,5 +1,6 @@
 import pyhop
 import json
+import itertools
 
 def check_enough (state, ID, item, num):
 	if getattr(state,item)[ID] >= num: return []
@@ -17,8 +18,32 @@ pyhop.declare_methods ('produce', produce)
 
 def make_method (name, rule):
 	def method (state, ID):
-		# your code here
-		pass
+		#tasks needed to complete our target reciepe
+		tasks = []
+		crafting_order = ['ingot', 'coal', 'ore', 'cobble', 'stick', 'plank','wood']
+
+		#loop through each of our required items
+		if 'Requires' in rule:
+			#for each item we need, check if we have enough
+			for item, num in rule['Requires'].items():
+				tasks.append(('have_enough', ID, item, num))
+		#check each of the consumed items in the order in which they are used in crafting
+		if 'Consumes' in rule:
+			for item in crafting_order:
+				if item in rule['Consumes']:
+					tasks.append(('have_enough', ID, item, rule['Consumes'][item]))
+
+		tasks.append(('op_' + str(name).replace(" ", "_"), ID))
+
+		return tasks
+	
+	#tag the function with the item it produces
+	method.produces = next(iter(rule['Produces']))
+
+	#tag function with the time needed to produce the item
+	method.time = rule['Time']
+	#give method new name
+	method.__name__ = str(name).replace(" ", "_")
 
 	return method
 
@@ -26,18 +51,63 @@ def declare_methods (data):
 	# some recipes are faster than others for the same product even though they might require extra tools
 	# sort the recipes so that faster recipes go first
 
-	# your code here
+	method_list = []
+
+	#make methods for each recipe
+	for recipe_name, recipe_data in data['Recipes'].items():
+		method_list.append(make_method(recipe_name, recipe_data))
+
+	#sort the methods by item and time
+	method_list.sort(key=lambda method: (method.produces, method.time))
+
+	#declare the methods
+	for key, group in itertools.groupby(method_list, key=lambda recipe: recipe.produces):
+		pyhop.declare_methods("produce_" + key, *group)
 	# hint: call make_method, then declare the method to pyhop using pyhop.declare_methods('foo', m1, m2, ..., mk)	
-	pass			
+				
 
 def make_operator (rule):
 	def operator (state, ID):
-		# your code here
-		pass
+		#check if the state has the amount required to perform the operation
+		if 'Requires' in rule:
+			for item, num in rule['Requires'].items():
+				if getattr(state, item)[ID] < num:
+					return False
+				
+
+		#check if the state has enouhg of the consumed items
+		if 'Consumes' in rule:
+			for item, num in rule['Consumes'].items():
+				if getattr(state, item)[ID] < num:
+					return False
+				
+		#check if the state has enough time
+		if state.time[ID] < rule['Time']:
+			return False
+		
+		#remove the consumed item from the state
+		if 'Consumes' in rule:
+			for item, num in rule['Consumes'].items():
+				getattr(state, item)[ID] -= num
+
+		#add the produced item to the state
+		for item, num in rule['Produces'].items():
+			getattr(state, item)[ID] += num
+
+		#subtract the time it took to produce the items
+		state.time[ID] -= rule['Time']
+
+		return state
+	
+	operator.produces = next(iter(rule['Produces']))
+	operator.time = rule['Time']
+
 	return operator
 
 def declare_operators (data):
-	# your code here
+	operator_list = []
+
+	
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
 	pass
 
