@@ -141,7 +141,7 @@ def add_heuristic (data, ID):
 					"ignot": 2, 
 					"cobble": 1,
 				}
-				
+
 				time_saved_total = 0
 				for task in filter(lambda task: task[0] == 'have_enough'and task[2] in time_saved.keys(), tasks):
 					time_saved_total += time_saved[task[2]] * task[3]
@@ -160,7 +160,7 @@ def add_heuristic (data, ID):
 					return True
 
 			if item_produced == 'iron_axe':
-				required_wood = sum(task[3] for task in filter(lambda tasl: task[0] == 'have_enough' and task[2] in {'wood', 'planks'}, tasks))
+				required_wood = sum(task[3] for task in filter(lambda task: task[0] == 'have_enough' and task[2] in {'wood', 'planks'}, tasks))
 
 				if required_wood <= 20:
 					return True
