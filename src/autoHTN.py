@@ -107,9 +107,12 @@ def make_operator (rule):
 def declare_operators (data):
 	operator_list = []
 
-	
+	for recipe_name, recipe_data in data['Recipes'].items():
+		temp_operator = make_operator(recipe_data)
+		temp_operator.__name__ = 'op_' + str(recipe_name).replace(" ", "_")
+		operator_list.append(temp_operator)
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
-	pass
+	pyhop.declare_operators(*operator_list)
 
 def add_heuristic (data, ID):
 	# prune search branch if heuristic() returns True
@@ -117,7 +120,59 @@ def add_heuristic (data, ID):
 	# e.g. def heuristic2(...); pyhop.add_check(heuristic2)
 	def heuristic (state, curr_task, tasks, plan, depth, calling_stack):
 		# your code here
-		return False # if True, prune this branch
+		if depth > 900:
+			return True
+		
+		if curr_task[0] == 'produce':
+			item_produced = curr_task[2]
+			goals = data['Goal'].keys()
+
+			if item_produced in data['Tools']:
+				if curr_task in calling_stack:
+					return True
+
+			if item_produced in goals:
+				return False
+
+			if item_produced == 'iron_pickaxe':
+				time_saved = {
+					"coal": 1, 
+					"ignot": 2, 
+					"cobble": 1,
+				}
+				time_saved_total = 0
+				for task in filter(lambda task: task[0] == 'have_enough'and task[2] in time_saved.keys(), tasks):
+					time_saved_total += time_saved[task[2]] * task[3]
+
+				if time_saved_total <= 18:
+					return True
+			
+			if item_produced == 'stone_pickaxe':
+				required_mining = sum(task[3] for task in filter(lambda task: task[0] == 'have_enough' and task[2] == 'cobble', tasks))
+				if required_mining <= 7:
+					return True
+
+			if item_produced in ('wooden_axe', 'stone_axe'):
+				required_wood = sum(task[3] for task in filter(lambda task: task[0] == 'have_enough' and task[2] in {'wood', 'planks'}, tasks))
+				if required_wood <= 10 or (required_wood <= 12 and item_produced == 'stone_axe'):
+					return True
+
+			if item_produced == 'iron_axe':
+				required_wood = sum(task[3] for task in filter(lambda tasl: task[0] == 'have_enough' and task[2] in {'wood', 'planks'}, tasks))
+
+				if required_wood <= 20:
+					return True
+
+		max_repetitions = 10
+		if len(calling_stack) > max_repetitions:
+			last_tasks = calling_stack[-max_repetitions:]
+			same_task_repeated = True
+			for task in last_tasks:
+				if task != curr_task:
+					same_task_repeated = False
+					break
+			if same_task_repeated:
+				return True
 
 	pyhop.add_check(heuristic)
 
