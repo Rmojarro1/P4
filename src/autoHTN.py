@@ -109,6 +109,7 @@ def declare_operators (data):
 
 	for recipe_name, recipe_data in data['Recipes'].items():
 		temp_operator = make_operator(recipe_data)
+		
 		temp_operator.__name__ = 'op_' + str(recipe_name).replace(" ", "_")
 		operator_list.append(temp_operator)
 	# hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
@@ -140,6 +141,7 @@ def add_heuristic (data, ID):
 					"ignot": 2, 
 					"cobble": 1,
 				}
+				
 				time_saved_total = 0
 				for task in filter(lambda task: task[0] == 'have_enough'and task[2] in time_saved.keys(), tasks):
 					time_saved_total += time_saved[task[2]] * task[3]
