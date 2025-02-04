@@ -1,0 +1,1 @@
+The heuristic reduces the search space by limiting the depth of the search. It also prevents redundant production of tools, making sure not too much is made. It also tries to reduce the production of uneccesary tools and stop repetetive tasks, preventing infinite loops.
